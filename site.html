@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Boas práticas — prevenção de invasões</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --accent:#00ff99;
+      --muted:#9aa7b2;
+      --glass: rgba(255,255,255,0.03);
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#051017 0%, #071622 60%);color:#e6f2ef}
+    .wrap{min-height:100vh;display:grid;place-items:center;padding:24px}
+
+    /* laptop mock */
+    .stage{width:960px;max-width:96vw;perspective:1600px}
+    .laptop{width:920px;max-width:100%;margin:0 auto;position:relative;transform-style:preserve-3d}
+    .lid{
+      width:100%;height:560px;border-radius:12px;background:linear-gradient(180deg,#000 0%, #02060a 100%);
+      border:8px solid #050505;overflow:hidden;transform-origin:bottom center;backface-visibility:hidden;position:relative;
+      transition:transform .9s cubic-bezier(.2,.9,.2,1),opacity .5s ease;
+    }
+    .bezel{position:absolute;inset:0;border-radius:6px;overflow:hidden}
+    .matrix-canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block;z-index:1}
+    .screen-pad{position:absolute;inset:22px;pointer-events:none;z-index:3}
+    .hacked-label{position:absolute;left:8px;top:8px;font-weight:700;letter-spacing:1px;color:var(--accent);font-size:12px;text-transform:uppercase;z-index:4}
+
+    /* centered CTA */
+    .center-cta{position:absolute;inset:0;display:grid;place-items:center;z-index:20;pointer-events:auto}
+    .cta-card{
+      width:56%;max-width:560px;background:linear-gradient(180deg, rgba(0,0,0,0.48), rgba(255,255,255,0.02));
+      border-radius:12px;padding:20px 22px;border:1px solid rgba(0,255,153,0.08);backdrop-filter: blur(6px);
+      box-shadow:0 12px 40px rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;gap:10px;z-index:21;
+    }
+    .cta-title{font-size:18px;color:#eafff0;font-weight:800}
+    .cta-sub{font-size:13px;color:var(--muted);text-align:center}
+    .cta-main{
+      background:linear-gradient(90deg, rgba(0,255,153,0.12), rgba(0,255,153,0.04));
+      border:1px solid rgba(0,255,153,0.28);color:var(--accent);padding:12px 22px;border-radius:10px;font-weight:800;
+      font-size:15px;cursor:pointer;box-shadow:0 8px 30px rgba(0,255,153,0.08);transition:transform .12s ease,box-shadow .12s ease;z-index:22;
+    }
+    .cta-main:active{transform:translateY(1px)}
+    .cta-secondary{background:transparent;border:none;color:var(--muted);font-weight:600;cursor:pointer;z-index:22}
+
+    .hinge-shadow{position:absolute;left:50%;transform:translateX(-50%);bottom:-14px;width:86%;height:28px;border-radius:6px;background:linear-gradient(180deg,rgba(0,0,0,0.45),rgba(0,0,0,0.15));filter:blur(12px);opacity:0.9;z-index:0}
+
+    .base{margin-top:12px;height:120px;background:linear-gradient(180deg,#050607,#0a0c0e);border-radius:10px;border:8px solid #050505;display:flex;align-items:center;justify-content:center;padding:12px;color:var(--muted);position:relative;box-shadow:0 30px 60px rgba(2,8,10,0.75)}
+    .keyboard{width:92%;height:72px;background:linear-gradient(180deg,#0b0c0d,#050506);border-radius:6px;box-shadow:inset 0 8px 20px rgba(0,0,0,0.6);position:relative}
+    .trackpad{position:absolute;bottom:18px;width:220px;height:36px;border-radius:6px;background:#0d0e10;box-shadow:inset 0 2px 8px rgba(255,255,255,0.02)}
+
+    /* small hack simulation area (centered, semitransparent terminal) */
+    .hack-overlay{
+      position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:64%;max-width:620px;height:46%;
+      background:rgba(0,0,0,0.7);border:1px solid rgba(0,255,153,0.06);border-radius:8px;padding:16px;display:none;z-index:23;
+      box-shadow:0 10px 40px rgba(0,0,0,0.6);font-family:monospace;color:#9fffd0;overflow:auto;
+    }
+    .hack-overlay.show{display:block}
+    .hack-line{white-space:pre-wrap;margin:6px 0;opacity:1;font-size:13px}
+
+    /* screen-wide glitch */
+    .glitch-full{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:0;z-index:24}
+    .glitch-full.visible{animation:glitchFull 1.1s steps(6) both}
+    @keyframes glitchFull{20%{opacity:1;transform:translateX(-6px) skewX(-3deg)}40%{transform:translateX(8px)}60%{transform:translateX(-4px)}100%{opacity:0;transform:none}}
+
+    /* content reveal */
+    .content{width:920px;max-width:96vw;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:28px;margin-top:28px;box-shadow:0 20px 50px rgba(2,8,10,0.6);display:none;color:var(--muted);opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+    .content.show{display:block}
+    .content.visible{opacity:1;transform:translateY(0)}
+
+    @media (max-width:900px){
+      .lid{height:420px}.base{height:100px}.trackpad{width:170px}.stage{width:92vw}.hack-overlay{width:86%;height:40%}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="stage">
+      <div class="laptop" id="laptop">
+        <div class="lid" id="lid">
+          <div class="bezel">
+            <canvas id="matrix" class="matrix-canvas"></canvas>
+            <div id="glitchFull" class="glitch-full" aria-hidden="true"></div>
+
+            <!-- small centered hack simulation (hidden until click) -->
+            <div id="hackOverlay" class="hack-overlay" aria-hidden="true"></div>
+
+            <div class="screen-pad">
+              <div class="hacked-label">ALERTA: Atividade suspeita</div>
+            </div>
+
+            <!-- CENTERED CTA -->
+            <div class="center-cta" id="centerCta" aria-hidden="false">
+              <div class="cta-card" role="button" aria-label="Iniciar verificação">
+                <div class="cta-title">Verificar risco</div>
+                
+                <button id="startBtn" class="cta-main" aria-pressed="false">Iniciar verificação</button>
+                
+              </div>
+            </div>
+
+            <div class="hinge-shadow"></div>
+          </div>
+        </div>
+
+        <div class="base">
+          <div class="keyboard"></div>
+          <div class="trackpad"></div>
+        </div>
+      </div>
+
+      <div id="content" class="content" aria-hidden="true">
+        <h1>Boas práticas para prevenir invasões</h1>
+        <p class="lead">Abaixo estão medidas práticas que reduzem significativamente o risco de que um invasor comprometa sua rede ou dispositivos.</p>
+
+        <ul class="checks">
+          <li class="item"><h3>Use autenticação multifator (MFA)</h3><p>Ative MFA em contas críticas — mesmo senhas fortes sozinhas não são suficientes.</p></li>
+          <li class="item"><h3>Gerencie atualizações e patches</h3><p>Mantenha sistemas, firmware e aplicações atualizados para corrigir vulnerabilidades.</p></li>
+          <li class="item"><h3>Segmentação de rede</h3><p>Separe redes e serviços críticos para limitar movimento lateral de invasores.</p></li>
+          <li class="item"><h3>Princípio do menor privilégio</h3><p>Conceda apenas as permissões estritamente necessárias.</p></li>
+          <li class="item"><h3>Criptografia</h3><p>Use TLS/IPsec e proteja dados em trânsito e em repouso.</p></li>
+          <li class="item"><h3>Logs e monitoramento</h3><p>Centralize logs e configure alertas para atividades anômalas.</p></li>
+          <li class="item"><h3>Backups & recuperação</h3><p>Tenha backups regulares e teste restaurações.</p></li>
+          <li class="item"><h3>Treinamento e políticas</h3><p>Eduque usuários sobre phishing e implemente políticas claras.</p></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // MATRIX CANVAS (fills screen area)
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+    let width, height, cols, size, drops;
+    function resize(){
+      width = canvas.width = canvas.clientWidth;
+      height = canvas.height = canvas.clientHeight;
+      size = Math.max(10, Math.floor(width / 60));
+      cols = Math.floor(width / size) + 1;
+      drops = Array.from({length: cols}).map(()=>Math.random()*height);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+    function draw(){
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      ctx.fillRect(0,0,width,height);
+      ctx.font = size + 'px monospace';
+      for(let i=0;i<cols;i++){
+        const text = Math.random() > 0.6 ? '01' : Math.floor(Math.random()*9);
+        ctx.fillStyle = i % 2 === 0 ? 'rgba(0,255,153,0.95)' : 'rgba(0,200,140,0.6)';
+        const x = i * size;
+        ctx.fillText(text, x, drops[i]);
+        drops[i] += size * (0.6 + Math.random()*0.9);
+        if(drops[i] > height && Math.random() > 0.975) drops[i] = 0;
+      }
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+
+    // Elements
+    const startBtn = document.getElementById('startBtn');
+    const skipBtn = document.getElementById('skipBtn');
+    const hackOverlay = document.getElementById('hackOverlay');
+    const glitchFull = document.getElementById('glitchFull');
+    const lid = document.getElementById('lid');
+    const laptop = document.getElementById('laptop');
+    const content = document.getElementById('content');
+    const centerCta = document.getElementById('centerCta');
+
+    // terminal-like lines for compact simulation
+    const hackLines = [
+      '[00:12:03] conexão recebida de 192.168.0.42',
+      '[00:12:04] varredura de portas: 22, 80, 443',
+      '[00:12:06] exploit: tentativa -> CVE-XXXX-YYYY',
+      '[00:12:07] elevação de privilégios: sucesso',
+      '[00:12:09] extraindo credenciais... ok',
+      '[00:12:12] backdoor implantado. sessão ativa.'
+    ];
+
+    // typewriter inside the small overlay
+    function playHackSimulation(cb){
+      hackOverlay.innerHTML = '';
+      hackOverlay.classList.add('show');
+      hackOverlay.setAttribute('aria-hidden','false');
+
+      let idx = 0;
+      function typeLine(){
+        if(idx >= hackLines.length) return finish();
+        const lineEl = document.createElement('div');
+        lineEl.className = 'hack-line';
+        hackOverlay.appendChild(lineEl);
+        let i = 0;
+        const txt = hackLines[idx];
+        const t = setInterval(()=>{
+          lineEl.textContent += txt[i] || '';
+          i++;
+          if(i > txt.length){
+            clearInterval(t);
+            idx++;
+            setTimeout(typeLine, 220);
+          }
+        }, 22);
+      }
+      function finish(){
+        // short pause so user reads
+        setTimeout(()=>{
+          hackOverlay.classList.remove('show');
+          hackOverlay.setAttribute('aria-hidden','true');
+          if(cb) cb();
+        }, 420);
+      }
+      typeLine();
+    }
+
+    function hideCenterCTA(){
+      centerCta.style.transition = 'opacity .28s ease, transform .28s ease';
+      centerCta.style.opacity = '0';
+      centerCta.style.pointerEvents = 'none';
+      centerCta.style.transform = 'scale(.98)';
+      // keep it removed from flow a bit later
+      setTimeout(()=> centerCta.style.display = 'none', 320);
+    }
+
+    function revealContent(){
+      content.classList.add('show');
+      content.setAttribute('aria-hidden','false');
+      requestAnimationFrame(()=> content.classList.add('visible'));
+      // dim matrix a bit
+      canvas.style.transition = 'opacity .6s ease';
+      canvas.style.opacity = '0.12';
+      // after a moment remove laptop element
+      setTimeout(()=> laptop.style.display = 'none', 900);
+    }
+
+    function runSequence(){
+      // disable button to avoid double clicks
+      startBtn.disabled = true;
+      startBtn.setAttribute('aria-pressed','true');
+
+      // hide CTA visually but keep room for hack overlay
+      hideCenterCTA();
+
+      // play small simulation overlay, then close lid and reveal content
+      playHackSimulation(()=>{
+        // show brief full-screen glitch for emphasis
+        glitchFull.classList.add('visible');
+        setTimeout(()=> glitchFull.classList.remove('visible'), 1100);
+
+        // close the lid realistically
+        lid.style.transition = 'transform .9s cubic-bezier(.2,.9,.2,1), opacity .5s ease';
+        lid.style.transformOrigin = 'bottom center';
+        lid.style.transform = 'rotateX(-110deg) translateY(6px)';
+        lid.style.opacity = '0';
+        laptop.style.transition = 'transform .9s ease, opacity .6s ease';
+        laptop.style.transform = 'translateY(18px)';
+        laptop.style.opacity = '0';
+
+        // after lid finishes closing, reveal the content
+        setTimeout(()=> revealContent(), 900);
+      });
+    }
+
+    // Bind events and ensure clickability
+    startBtn.style.zIndex = '1010';
+    startBtn.addEventListener('click', runSequence);
+    skipBtn.addEventListener('click', ()=>{
+      // immediate reveal (skip)
+      centerCta.style.display = 'none';
+      laptop.style.display = 'none';
+      content.style.display = 'block';
+      setTimeout(()=> content.style.opacity = 1, 30);
+    });
+
+    // keyboard accessibility
+    startBtn.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); runSequence(); }
+    });
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape'){ centerCta.style.display = 'none'; laptop.style.display = 'none'; content.style.display = 'block'; setTimeout(()=> content.style.opacity = 1, 30); }
+    });
+  </script>
+</body>
+</html>
